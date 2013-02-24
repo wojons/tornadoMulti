@@ -420,7 +420,7 @@ class HTTPRequest(object):
 
         self.path, sep, self.query = uri.partition('?')
         self.arguments = parse_qs_bytes(self.query, keep_blank_values=True)
-
+    
     def supports_http_1_1(self):
         """Returns True if this request supports HTTP/1.1 semantics"""
         return self.version == "HTTP/1.1"

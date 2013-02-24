@@ -24,6 +24,7 @@ import re
 import socket
 import ssl
 import stat
+import time
 
 from tornado.concurrent import dummy_executor, run_on_executor
 from tornado.ioloop import IOLoop
@@ -140,6 +141,49 @@ def add_accept_handler(sock, callback, io_loop=None):
             callback(connection, address)
     io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
 
+def add_accept_queue_handler(queue, callback, io_loop=None):
+	sock = ""
+	if io_loop is None:
+		io_loop = IOLoop.instance()
+	
+	def accept_handler(fd, events):
+		
+		"""try:
+			#sock = socket.fromfd(queue.get_nowait())
+			connection, address = sock.accept()
+		except socket.error as e:
+			if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
+				return
+			raise
+		"""
+		callback(sock, "127.0.0.1")
+	n = open("/tmp/tTest2", 'a+')
+	while True:
+		time.sleep(3)
+		#try:
+		#n.write(str(queue.get_nowait()))
+		#n.flush()
+		sock = socket.fromfd(queue.get_nowait(),socket.AF_INET, socket.SOCK_STREAM)
+		io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
+		#except:
+		#pass
+
+def add_accept_handler_queue(sock, queue, io_loop=None):
+    if io_loop is None:
+        io_loop = IOLoop.instance()
+
+    def accept_handler(fd, events):
+        while True:
+            try:
+                connection, address = sock.accept()
+            except socket.error as e:
+                if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
+                    return
+                raise
+            #callback(connection, address)
+            queue.put(connection.fileno())
+            time.sleep(10)
+    io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
 
 class Resolver(object):
     def __init__(self, io_loop=None, executor=None):

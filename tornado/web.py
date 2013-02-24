@@ -81,6 +81,9 @@ from tornado import template
 from tornado.escape import utf8, _unicode
 from tornado.util import bytes_type, import_object, ObjectDict, raise_exc_info, unicode_type
 
+
+from multiprocessing import Process, Queue
+
 try:
     from io import BytesIO  # python 3
 except ImportError:
@@ -1298,7 +1301,7 @@ class Application(object):
             from tornado import autoreload
             autoreload.start()
 
-    def listen(self, port, address="", **kwargs):
+    def listen(self, port, address="", queue=None, **kwargs):
         """Starts an HTTP server for this application on the given port.
 
         This is a convenience alias for creating an HTTPServer object
@@ -1314,8 +1317,19 @@ class Application(object):
         # import is here rather than top level because HTTPServer
         # is not importable on appengine
         from tornado.httpserver import HTTPServer
+        f = open("/tmp/tTest", 'a+')
+        f.write(port.__class__.__name__)
+        f.close()
         server = HTTPServer(self, **kwargs)
-        server.listen(port, address)
+        if port.__class__.__name__ == 'Queue':
+            server.listen2Queue(port) #lets use a queue an not an nother port
+        else:
+			if queue == None:
+				server.listen(port, address)
+			else:
+				server.listenQueue(queue, port, address)
+        #server.listenQueue() #we are going to processes a queue and not a port and ip address
+        
 
     def add_handlers(self, host_pattern, host_handlers):
         """Appends the given handlers to our handler list.

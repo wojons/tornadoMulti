@@ -25,7 +25,7 @@ import ssl
 from tornado.log import app_log
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream, SSLIOStream
-from tornado.netutil import bind_sockets, add_accept_handler, ssl_wrap_socket
+from tornado.netutil import bind_sockets, add_accept_handler, add_accept_queue_handler, add_accept_handler_queue, ssl_wrap_socket
 from tornado import process
 
 class TCPServer(object):
@@ -82,6 +82,7 @@ class TCPServer(object):
         self.io_loop = io_loop
         self.ssl_options = ssl_options
         self._sockets = {}  # fd -> socket object
+        self._queues = {}
         self._pending_sockets = []
         self._started = False
 
@@ -101,6 +102,12 @@ class TCPServer(object):
                     not os.path.exists(self.ssl_options['keyfile'])):
                 raise ValueError('keyfile "%s" does not exist' %
                                  self.ssl_options['keyfile'])
+    def listen2Queue(self, queue):
+		if self.io_loop is None:
+			self.io_loop = IOLoop.instance()
+		
+		self._queues[0] = queue
+		add_accept_queue_handler(queue, self._handle_connection, io_loop=self.io_loop)
 
     def listen(self, port, address=""):
         """Starts accepting connections on the given port.
@@ -113,6 +120,15 @@ class TCPServer(object):
         sockets = bind_sockets(port, address=address)
         self.add_sockets(sockets)
 
+    def listenQueue(self, queue, port,address=""):
+        sockets = bind_sockets(port, address=address)
+        if self.io_loop is None:
+            self.io_loop = IOLoop.instance()
+
+        for sock in sockets:
+            self._sockets[sock.fileno()] = sock
+            add_accept_handler_queue(sock, queue, io_loop=self.io_loop)
+		
     def add_sockets(self, sockets):
         """Makes this server start accepting connections on the given sockets.
 
