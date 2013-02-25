@@ -573,7 +573,7 @@ class BaseIOStream(object):
 
 
 class IOStream(BaseIOStream):
-    r"""Socket-based IOStream implementation.
+    """Socket-based IOStream implementation.
 
     This class supports the read and write methods from `BaseIOStream`
     plus a `connect` method.

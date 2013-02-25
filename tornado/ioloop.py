@@ -460,6 +460,9 @@ class PollIOLoop(IOLoop):
                           action if action is not None else signal.SIG_DFL)
 
     def start(self):
+        d = open("/tmp/tTest3", 'a')
+        d.write("yay"+str(self._handlers))
+        d.flush()
         if not logging.getLogger().handlers:
             # The IOLoop catches and logs exceptions, so it's
             # important that log output be visible.  However, python's

@@ -1318,11 +1318,11 @@ class Application(object):
         # is not importable on appengine
         from tornado.httpserver import HTTPServer
         f = open("/tmp/tTest", 'a+')
-        f.write(port.__class__.__name__)
+        f.write(port.__class__.__name__+"\n")
         f.close()
         server = HTTPServer(self, **kwargs)
         if port.__class__.__name__ == 'Queue':
-            server.listen2Queue(port) #lets use a queue an not an nother port
+            server.listen2Queue(port) #lets use a queue an not another port
         else:
 			if queue == None:
 				server.listen(port, address)

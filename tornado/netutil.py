@@ -24,7 +24,9 @@ import re
 import socket
 import ssl
 import stat
+
 import time
+from multiprocessing.reduction import rebuild_handle, reduce_handle
 
 from tornado.concurrent import dummy_executor, run_on_executor
 from tornado.ioloop import IOLoop
@@ -139,34 +141,42 @@ def add_accept_handler(sock, callback, io_loop=None):
                     return
                 raise
             callback(connection, address)
+    d = open("/tmp/tTest", 'a')
+    d.write("fd for port: "+"\n")
+    d.flush()
     io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
 
 def add_accept_queue_handler(queue, callback, io_loop=None):
-	sock = ""
 	if io_loop is None:
 		io_loop = IOLoop.instance()
-	
-	def accept_handler(fd, events):
 		
-		"""try:
-			#sock = socket.fromfd(queue.get_nowait())
-			connection, address = sock.accept()
-		except socket.error as e:
-			if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
-				return
-			raise
-		"""
+	def queue_callback():
+		try:
+			#n.write("looking into queue\n")
+			#n.flush()
+			io_loop.add_callback(queue_callback)
+			fd = rebuild_handle(queue.get_nowait())
+			n.write(str(fd)+"\n")
+			n.write("meep"+"\n")
+			sock = socket.fromfd(fd,socket.AF_INET, socket.SOCK_STREAM)
+			n.write(callback.__name__+"\n")
+			n.flush()
+			io_loop.add_callback(accept_handler, sock)
+			n.write("meep2\n")
+			n.flush()
+		except:
+			pass
+	
+	def accept_handler(sock):	
+		d = open("/tmp/tTest3", 'a')
+		d.write("yay")
+		d.flush()
 		callback(sock, "127.0.0.1")
-	n = open("/tmp/tTest2", 'a+')
-	while True:
-		time.sleep(3)
-		#try:
-		#n.write(str(queue.get_nowait()))
-		#n.flush()
-		sock = socket.fromfd(queue.get_nowait(),socket.AF_INET, socket.SOCK_STREAM)
-		io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
-		#except:
-		#pass
+	
+	n = open("/tmp/tTest2", 'a')
+	io_loop.add_callback(queue_callback)
+		
+	
 
 def add_accept_handler_queue(sock, queue, io_loop=None):
     if io_loop is None:
@@ -181,8 +191,8 @@ def add_accept_handler_queue(sock, queue, io_loop=None):
                     return
                 raise
             #callback(connection, address)
-            queue.put(connection.fileno())
-            time.sleep(10)
+            queue.put(reduce_handle(connection.fileno()))
+            #time.sleep(10)
     io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
 
 class Resolver(object):

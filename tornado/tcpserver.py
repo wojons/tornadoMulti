@@ -22,6 +22,8 @@ import os
 import socket
 import ssl
 
+import time
+
 from tornado.log import app_log
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream, SSLIOStream
@@ -103,11 +105,13 @@ class TCPServer(object):
                 raise ValueError('keyfile "%s" does not exist' %
                                  self.ssl_options['keyfile'])
     def listen2Queue(self, queue):
+		
 		if self.io_loop is None:
 			self.io_loop = IOLoop.instance()
 		
 		self._queues[0] = queue
 		add_accept_queue_handler(queue, self._handle_connection, io_loop=self.io_loop)
+		
 
     def listen(self, port, address=""):
         """Starts accepting connections on the given port.
