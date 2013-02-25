@@ -585,8 +585,8 @@ class PollIOLoop(IOLoop):
                         app_log.error("Exception in I/O handler for fd %s",
                                       fd, exc_info=True)
                 except Exception:
-                    app_log.error("Exception in I/O handler for fd %s",
-                                  fd, exc_info=True)
+					pass
+                    #app_log.error("Exception in I/O handler for fd %s", fd, exc_info=True)
         # reset the stopped flag so another start/stop pair can be issued
         self._stopped = False
         if self._blocking_signal_threshold is not None:

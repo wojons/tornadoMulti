@@ -150,31 +150,38 @@ def add_accept_queue_handler(queue, callback, io_loop=None):
 	if io_loop is None:
 		io_loop = IOLoop.instance()
 		
-	def queue_callback():
+	def accept_handler(fd, events):
 		try:
 			#n.write("looking into queue\n")
 			#n.flush()
-			io_loop.add_callback(queue_callback)
-			fd = rebuild_handle(queue.get_nowait())
-			n.write(str(fd)+"\n")
-			n.write("meep"+"\n")
-			sock = socket.fromfd(fd,socket.AF_INET, socket.SOCK_STREAM)
-			n.write(callback.__name__+"\n")
+			#io_loop.add_callback(queue_callback)
+			n = open("/tmp/tTest2", 'a')
+			n.write("try reading from queue\n")
 			n.flush()
-			io_loop.add_callback(accept_handler, sock)
+			queue_read = queue.get_nowait()
+			#n.write(str(qr)+"\n")
+			n.flush()
+			connection = rebuild_handle(queue_read[0])
+			n.write("read from queue\n")
+			n.flush()
+			n.write("conn: "+str(connection)+"\n")
+			n.write("meep"+"\n")
+			n.flush()
+			sock = socket.fromfd(connection,socket.AF_INET, socket.SOCK_STREAM)
+			n.write("queue: "+str(fd)+"\n")
+			n.write("queue reader: "+str(queue._reader.fileno())+"\n")
+			n.write("queue writer : "+str(queue._writer.fileno())+"\n")
+			n.flush()
+			callback(sock, queue_read[1])
+			#io_loop.add_callback(accept_handler, sock)
 			n.write("meep2\n")
 			n.flush()
 		except:
 			pass
 	
-	def accept_handler(sock):	
-		d = open("/tmp/tTest3", 'a')
-		d.write("yay")
-		d.flush()
-		callback(sock, "127.0.0.1")
-	
 	n = open("/tmp/tTest2", 'a')
-	io_loop.add_callback(queue_callback)
+	io_loop.add_handler(queue._reader.fileno(),  accept_handler, IOLoop.READ)
+	#io_loop.add_callback(queue_callback)
 		
 	
 
@@ -183,6 +190,9 @@ def add_accept_handler_queue(sock, queue, io_loop=None):
         io_loop = IOLoop.instance()
 
     def accept_handler(fd, events):
+        n = open("/tmp/tTest", 'a')
+        n.write("socket fd: "+str(fd)+"\n")
+        n.flush()
         while True:
             try:
                 connection, address = sock.accept()
@@ -190,9 +200,8 @@ def add_accept_handler_queue(sock, queue, io_loop=None):
                 if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                     return
                 raise
-            #callback(connection, address)
-            queue.put(reduce_handle(connection.fileno()))
-            #time.sleep(10)
+            n.write("socket faddr:"+str(address)+"\n")
+            queue.put_nowait([reduce_handle(connection.fileno()), address])
     io_loop.add_handler(sock.fileno(), accept_handler, IOLoop.READ)
 
 class Resolver(object):
